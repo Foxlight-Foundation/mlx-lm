@@ -220,11 +220,12 @@ class DeepseekV32Attention(nn.Module):
                     mx.broadcast_to(idx, idx.shape[:-1] + (k_pe.shape[-1],)),
                     axis=2,
                 )
-                if (
-                    mask is not None
-                    and hasattr(cache[0], "left_padding")
-                    and cache[0].left_padding.max().item() > 0
-                ):
+                if mask is not None and hasattr(cache[0], "left_padding"):
+                    # Pure graph ops on purpose: reading left_padding back to
+                    # the host (.item()) here would force a device sync per
+                    # layer per generated token. With zero padding the
+                    # comparison yields an all-True mask, which is semantically
+                    # a no-mask, so no runtime content check is needed.
                     gathered_idx = topk_indices[:, :, 0, :]
                     left_pad = cache[0].left_padding[:, None, None]
                     mask = (gathered_idx >= left_pad)[:, :, None, :]
