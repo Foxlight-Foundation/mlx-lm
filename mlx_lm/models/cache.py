@@ -930,6 +930,10 @@ class BatchKVCache(_BaseCache):
         self._idx += keys.shape[2]
         self.keys[..., prev : self._idx, :] = keys
         self.values[..., prev : self._idx, :] = values
+
+        # Ensure offset and left_padding are evaluated
+        self.keys = mx.depends(self.keys, (self.offset, self.left_padding))
+
         return self.keys_and_values()
 
     def keys_and_values(self):
